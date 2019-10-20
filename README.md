@@ -10,7 +10,7 @@ Currently, [n](https://github.com/tj/n) powers most of our NodeJS versioning req
 
 A virtualenv kind of solution would be an ideal solution for these cases. While [nodeenv](https://github.com/ekalinin/nodeenv) exists, the activate flow, pip install (as the primary mode) added load to picking it up.
 
-Ergo, [nodevirtualenv](https://github.com/techiev2/nodevirtualenv) comes in as an alternative.
+Ergo, [nodevirtualenv](https://github.com/techiev2/node-virtualenv) comes in as an alternative.
 
 
 
