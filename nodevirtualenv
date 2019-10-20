@@ -135,7 +135,11 @@ houseKeep() {
     envPath="$HOME/.node-envs/${version}"
   fi
 
+  if [[ $envPath != "$HOME/.node-envs"* ]]; then
+    envPath="$HOME/.node-envs/$envPath"
+  fi
   binaryPath="$envPath/bin/node"
+
   if [[ ! -f $binaryPath ]] && [[ ! -z ${binary} ]]; then
     printErrorAndExit "Requested NodeJS version binary not found at ${binaryPath}"
   fi
