@@ -33,5 +33,3 @@ In its current state, nodevirtualenv allows installation of specific NodeJS vers
 #### Caveat emptor
 
 * As such, the script works only on 64-bit GNU/Linux systems and uses the corresponding binary paths from NodeJS distribution channels. Support for Windows/non-GNU/Linux systems are forthcoming.
-
-* The --bin argument when used ought to be placed as the last argument, failing which, the script installs the required version. This is a bug with the current argument parse flow and would be fixed in a change soon.
