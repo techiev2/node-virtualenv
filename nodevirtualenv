@@ -1,0 +1,213 @@
+#! /bin/bash
+
+# General system helpers being
+
+
+PACKAGE_VERSION=1.0.0
+
+printError() {
+  echo -e "\e[1;7;31m ERROR   \e[0m\e[31m :: ${1}\e[0m"
+}
+printInfo() {
+  echo -e "\e[1;7;34m INFO    \e[0m\e[34m ::\e[0m ${1}"
+}
+printSuccess() {
+  echo -e "\e[1;7;32m SUCCESS \e[0m\e[32m ::\e[0m ${1}"
+}
+printWarning() {
+  echo -e "\e[1;7;93m WARNING \e[0m ::\e[0m ${1}"
+}
+printErrorAndExit() {
+  if [[ -z $1 ]]; then
+    msg="No arguments provided. Invalid call"
+  else
+    msg="$1"
+  fi
+  printError "$msg"
+  exit 1
+}
+isFunctionFound() {
+  declare -f "$1" > /dev/null;
+  echo $?
+}
+# System helper functions end here
+
+
+getArgs() {
+  i=0
+  arr=("$@")
+  for arg in "${arr[@]}"; do
+    if [[ $arg == "--"* ]]; then
+      args["$arg"]=1
+    elif [[ $arg == "-"* ]]; then
+      args["$arg"]=${arr[$((i+1))]}
+    fi
+    i=$((i+1))
+  done
+
+}
+
+printHelpAndExit() {
+  echo "Usage: nodevirtualenv [options]
+
+  * Installs a virtualenvironment at ${HOME}/.node-envs/<version>
+  * To run a command with the -c option, either a version(-v) or binary path (-p) option is required.
+
+  Options:
+
+  -v        NodeJS version to install/use to run.
+  -p        NodeJS installation path to use.
+  -c        Script path to run with the requested version.
+
+  --bin     Get the path for the NodeJS binary for the version specified.
+  --list    List all locally installed NodeJS versions.
+
+"
+  exit 0
+}
+
+listInstalledVersionsAndExit() {
+  rootPath="$HOME/.node-envs"
+  if [[ ! -d "$rootPath" ]]; then
+    printWarning "No NodeJS versions installed locally"
+    exit 0
+  else
+    count=$(ls $rootPath/*/bin/node | wc -l)
+    printSuccess "Found ${count} locally installed NodeJS installations"
+    versions=()
+    for version in $(ls "$rootPath"); do
+      bin="${rootPath}/${version}/bin/node"
+      if [[ -f $bin ]]; then
+        version=$($bin -v)
+        echo "* $version [$bin]"
+      fi
+    done
+    exit 0
+  fi
+  exit 0
+}
+
+
+printPackageVersionAndExit() {
+  echo "nodevirtualenv v${PACKAGE_VERSION}"
+  exit 0
+}
+
+
+declare -A args
+
+houseKeep() {
+
+  if [[ ${#@} == 0 ]] || [[ $1 == '-h' ]] || [[ $1 == '--help' ]]; then
+    printHelpAndExit
+  fi
+
+
+  getArgs $@
+
+  if [[ ${args['--version']} ]]; then
+    printPackageVersionAndExit
+  fi
+
+  nodeBaseURL="https://nodejs.org/dist/"
+
+  version=${args['-v']}
+  envPath=${args['-p']}
+  cmd=${args['-c']}
+  binary=${args['--bin']}
+  ls=${args['--list']}
+
+  if [[ $ls ]]; then
+    listInstalledVersionsAndExit
+  fi
+
+  # Check if a version is provided and exit if not.
+  # Alternatively, if a path is provided, deduce the version downstream.
+  if [[ -z ${version} ]]; then
+    if [[ -z $envPath ]] && [[ -z $cmd ]]; then
+      printErrorAndExit "No version specified. Cannot proceed"
+    fi
+  fi
+
+  # If no environment path is provided, deduce a path from root env
+  # path and the version provided.
+  if [[ -z ${envPath} ]]; then
+    envPath="$HOME/.node-envs/${version}"
+  fi
+
+  binaryPath="$envPath/bin/node"
+  if [[ ! -f $binaryPath ]] && [[ ! -z ${binary} ]]; then
+    printErrorAndExit "Requested NodeJS version binary not found at ${binaryPath}"
+  fi
+
+  # If no version was provided by the commandline options, deduce
+  # one from the path's binary.
+  if [[ -z ${version} ]]; then
+    version=$($binaryPath -v)
+    version=${version:1:${#version}}
+  fi
+
+  # If a command is provided via the -c option, attempt to find the
+  # requested version's binary and run it via the same.
+  if [[ ! -z $cmd ]]; then
+    # If requested environment is not found, exit immediately
+    if [[ ! -d $envPath ]]; then
+      printErrorAndExit "NodeJS v${version} not found. Install before proceeding"
+    fi
+
+    printInfo "Using NodeJS v${version} to run ${cmd}"
+
+    # Run the requested script via the found binary
+    "${binaryPath}" "$(realpath $cmd)"
+
+  # If a --bin commandline argument is provided, return the binary path
+  elif [[ $binary == 1 ]]; then
+    echo "$binaryPath"
+
+  # If a version number/install path is provided, attempt to download
+  # the requested version from NodeJS distributions and install it to
+  # the requested path
+  else
+
+    file="/tmp/node-${version}.tar.gz"
+    printInfo "Installing NodeJS v${version} at ${envPath}"
+
+    url="${nodeBaseURL}v${version}/node-v${version}-linux-x64.tar.gz"
+    res=$(curl -s -l -w "%{http_code}" "$url" -o "$file" | tail -n 1)
+
+    # If a non HTTP200 status is received, exit with an error to check
+    # version availability against remote base path.
+    if [[ $res != 200 ]]; then
+      printErrorAndExit "Unable to fetch v${version}. Please check against ${nodeBaseURL}"
+    fi
+
+    # If the install path is not found, create it. Else, clear the
+    # current contents for a clean install.
+    if [[ ! -d $envPath ]]; then
+      mkdir -p "$envPath"
+    else
+      rm -r "$envPath"/*
+    fi
+
+    # Copy over the downloaded compressed binaries and uncompress them
+    # at the target location
+    cp "$file" "${envPath}"
+    cd "${envPath}"
+    tar -xf "$file"
+    mv node*/* .
+
+    # Clean up the installation path and exit with a success message.
+    rm -rdf "$(pwd)/node-v${version}-linux-x64/"
+    rm "$file"
+
+    printSuccess "Installed NodeJS v${version} to ${envPath}"
+
+  fi
+}
+
+
+main() {
+  houseKeep $@
+}
+
+main $@

@@ -1,0 +1,39 @@
+#! /bin/bash
+
+# General system helpers being
+
+printError() {
+  echo -e "\e[1;7;31m ERROR   \e[0m\e[31m :: ${1}\e[0m"
+}
+printInfo() {
+  echo -e "\e[1;7;34m INFO    \e[0m\e[34m ::\e[0m ${1}"
+}
+printSuccess() {
+  echo -e "\e[1;7;32m SUCCESS \e[0m\e[32m ::\e[0m ${1}"
+}
+printWarning() {
+  echo -e "\e[1;7;93m WARNING \e[0m ::\e[0m ${1}"
+}
+printErrorAndExit() {
+  if [[ -z $1 ]]; then
+    msg="No arguments provided. Invalid call"
+  else
+    msg="$1"
+  fi
+  printError "$msg"
+  exit 1
+}
+isFunctionFound() {
+  declare -f "$1" > /dev/null;
+  echo $?
+}
+# System helper functions end here
+
+
+installPath="/usr/local/bin/"
+
+printInfo "Installing nodevirtualenv to $installPath. Please enter sudo password if/when prompted"
+
+sudo cp $(pwd)/nodevirtualenv "$installPath"
+
+printSuccess "Installed nodevirtualenv to $installPath/nodevirtualenv. Please open up a new terminal to use."
