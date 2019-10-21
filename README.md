@@ -26,6 +26,9 @@ In its current state, nodevirtualenv allows installation of specific NodeJS vers
 	  -c        Script path to run with the requested version.
 
 	  --bin     Get the path for the NodeJS binary for the version specified.
+                    -v <10.9.0> / -p <test-api-env-10.9.0>
+                    The -v switch looks for direct version names inside the envs path and doesn't right now look
+                    inside all installed envs to filter out on version.
 	  --list    List all locally installed NodeJS versions.
 
 
