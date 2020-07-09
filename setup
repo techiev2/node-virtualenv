@@ -30,10 +30,10 @@ isFunctionFound() {
 # System helper functions end here
 
 
-installPath="/usr/local/bin/"
+installPath="/usr/local/bin"
 
 printInfo "Installing nodevirtualenv to $installPath. Please enter sudo password if/when prompted"
 
-sudo cp $(pwd)/nodevirtualenv "$installPath"
+sudo cp $(dirname ${BASH_SOURCE[0]})/nodevirtualenv "$installPath"
 
 printSuccess "Installed nodevirtualenv to $installPath/nodevirtualenv. Please open up a new terminal to use."
